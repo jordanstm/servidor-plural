@@ -1,0 +1,11 @@
+/target
+/models
+/node_modules
+/venv
+*.exe
+*.dll
+*.log
+/interface/node_modules
+/interface/dist
+/interface/src-tauri/target
+.env

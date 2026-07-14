@@ -1,0 +1,39 @@
+[package]
+name = "servidor_plural_apps_sem_mic"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# =========================================================================
+# 🚨🚨🚨 N A O  M E X A  N A  V E R S A O  D O  L L A M A - C P P ! 🚨🚨🚨
+# =========================================================================
+# Apenas a versão EXATA "=0.1.136" possui o "direct_io = true" nativo no C++.
+# Qualquer versão superior (como 0.1.137+) reativa o MMAP no Windows e
+# QUEBRA COMPLETAMENTE a injeção do vram_allocator.dll, causando o erro:
+# "failed to read magic". MANTENHA "=0.1.136" ESTRITAMENTE TRAVADO AQUI!
+llama-cpp-2 = { version = "=0.1.136", features = ["cuda"] }
+llama-cpp-sys-2 = "=0.1.136"
+wgpu = "0.19"
+raw-window-handle = "0.6"
+sysinfo = "0.30"
+libloading = "0.9.0"
+
+# Async & Web
+tokio = { version = "1.35", features = ["full"] }
+axum = { version = "0.7", features = ["macros", "ws"] }
+tower-http = { version = "0.5", features = ["cors"] }
+futures = "0.3"
+async-stream = "0.3"
+
+# Utilities
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rand = "0.10.0"
+encoding_rs = "0.8.35"
+hf-hub = "0.3.2"
+bytemuck = { version = "1.15", features = ["derive"] }
+dotenvy = "0.15"
+reqwest = { version = "0.11", features = ["json"] }
+
+

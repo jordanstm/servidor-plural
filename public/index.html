@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidor Plural - Standalone</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050508;
+            --glass-bg: rgba(20, 20, 30, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --neon-cyan: #00f3ff;
+            --neon-purple: #b000ff;
+            --text-main: #ffffff;
+            --text-muted: #8b8b9b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Background Glows */
+        .glow-orb { position: absolute; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; }
+        .orb-1 { width: 400px; height: 400px; background: var(--neon-purple); top: -100px; left: -100px; }
+        .orb-2 { width: 300px; height: 300px; background: var(--neon-cyan); bottom: -50px; right: -50px; }
+        
+        header { padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); background: var(--glass-bg); backdrop-filter: blur(10px); }
+        h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(90deg, var(--text-main), var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .status-badge { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); font-size: 0.9rem; }
+        .indicator { width: 10px; height: 10px; border-radius: 50%; background: #ff3366; box-shadow: 0 0 10px #ff3366; transition: 0.3s; }
+        .indicator.connected { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        
+        main { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; position: relative; }
+        
+        /* Setup Container */
+        .setup-container { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 3rem; width: 100%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 1.5rem; transition: 0.5s; }
+        .setup-container.hidden { display: none; }
+        
+        .setup-title { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 1rem; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .form-group label { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .form-group input, .form-group select { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px; color: white; font-size: 1rem; transition: 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
+        
+        button.primary { background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); color: white; border: none; border-radius: 12px; padding: 1.2rem; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; margin-top: 1rem; }
+        button.primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(176, 0, 255, 0.4); }
+        button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Chat Container */
+        .chat-layout { display: none; width: 100%; max-width: 1200px; height: 100%; gap: 2rem; }
+        .chat-layout.visible { display: flex; }
+        
+        .chat-main { flex: 1; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-messages { flex: 1; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+        
+        .message { max-width: 80%; padding: 1rem 1.5rem; border-radius: 16px; line-height: 1.5; font-size: 1.05rem; }
+        .message.bot { background: rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .message.user { background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(176, 0, 255, 0.1)); border: 1px solid var(--neon-cyan); align-self: flex-end; border-bottom-right-radius: 4px; }
+        
+        .input-area { padding: 1.5rem; background: rgba(0,0,0,0.3); border-top: 1px solid var(--glass-border); display: flex; gap: 1rem; }
+        .input-area textarea { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px; color: white; resize: none; height: 60px; font-size: 1rem; transition: 0.3s; }
+        .input-area textarea:focus { outline: none; border-color: var(--neon-purple); }
+        .input-area button { background: var(--text-main); color: var(--bg-color); border: none; border-radius: 12px; padding: 0 2rem; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        .input-area button:hover { background: var(--neon-cyan); }
+    </style>
+</head>
+<body>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <header>
+        <h1>Servidor Plural</h1>
+        <div class="status-badge" id="statusBadge">
+            <div class="indicator" id="connectionIndicator"></div>
+            <span id="connectionText">Aguardando Configuração</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- SETUP SCREEN -->
+        <div class="setup-container" id="setupScreen">
+            <div class="setup-title">Configuração do Motor</div>
+            
+            <div class="form-group">
+                <label>Caminho do Modelo GGUF</label>
+                <input type="text" id="modelPath" placeholder="ex: models/meu_modelo.gguf" value="model.gguf">
+            </div>
+            
+            <div class="form-group">
+                <label>Estratégia de Destilação</label>
+                <select id="distMode">
+                    <option value="1">Padrão (Foco em Precisão)</option>
+                    <option value="2">Alta Velocidade (Otimizado Q4)</option>
+                    <option value="3">Baixa VRAM (Economia Máxima)</option>
+                </select>
+            </div>
+            
+            <button class="primary" id="startBtn" onclick="initEngine()">Iniciar Servidor Plural</button>
+        </div>
+
+        <!-- CHAT SCREEN -->
+        <div class="chat-layout" id="chatScreen">
+            <div class="chat-main">
+                <div class="chat-messages" id="chatContainer">
+                    <div class="message bot">Servidor Plural Inicializado com Sucesso. Como posso ajudar hoje?</div>
+                </div>
+                <div class="input-area">
+                    <textarea id="promptInput" placeholder="Envie seu prompt aqui... (Shift+Enter para nova linha)" onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendPrompt(); }"></textarea>
+                    <button onclick="sendPrompt()">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let ws;
+        const setupScreen = document.getElementById('setupScreen');
+        const chatScreen = document.getElementById('chatScreen');
+        const indicator = document.getElementById('connectionIndicator');
+        const statusText = document.getElementById('connectionText');
+        const startBtn = document.getElementById('startBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const promptInput = document.getElementById('promptInput');
+        let currentBotMessage = null;
+
+        async function initEngine() {
+            const path = document.getElementById('modelPath').value;
+            const mode = document.getElementById('distMode').value;
+            
+            startBtn.innerText = "Carregando Modelo...";
+            startBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_path: path, distillation_mode: parseInt(mode) })
+                });
+                
+                const data = await res.json();
+                if(data.status === 'success') {
+                    setupScreen.classList.add('hidden');
+                    chatScreen.classList.add('visible');
+                    connectWS();
+                } else {
+                    alert(data.message);
+                    startBtn.innerText = "Iniciar Servidor Plural";
+                    startBtn.disabled = false;
+                }
+            } catch(e) {
+                alert("Erro ao conectar no servidor!");
+                startBtn.innerText = "Iniciar Servidor Plural";
+                startBtn.disabled = false;
+            }
+        }
+
+        function connectWS() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host || '127.0.0.1:11438';
+            ws = new WebSocket(${protocol}//System.Management.Automation.Internal.Host.InternalHost/stream);
+
+            ws.onopen = () => {
+                indicator.classList.add('connected');
+                statusText.innerText = 'Motor Plural Conectado';
+            };
+
+            ws.onmessage = (event) => {
+                if (!currentBotMessage) {
+                    currentBotMessage = document.createElement('div');
+                    currentBotMessage.className = 'message bot';
+                    chatContainer.appendChild(currentBotMessage);
+                }
+                currentBotMessage.innerText += event.data;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            };
+
+            ws.onclose = () => {
+                indicator.classList.remove('connected');
+                statusText.innerText = 'Conexão Perdida';
+            };
+        }
+
+        function appendMessage(text, sender) {
+            const msg = document.createElement('div');
+            msg.className = message ;
+            msg.innerText = text;
+            chatContainer.appendChild(msg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (sender === 'user') currentBotMessage = null;
+        }
+
+        function sendPrompt() {
+            const text = promptInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            appendMessage(text, 'user');
+            promptInput.value = '';
+            
+            ws.send(JSON.stringify({
+                action: "generate",
+                prompt: text,
+                max_tokens: 512,
+                temperature: 0.7
+            }));
+        }
+    </script>
+</body>
+</html>
