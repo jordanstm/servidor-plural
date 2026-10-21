@@ -14,6 +14,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [distMode, setDistMode] = useState("1");
   const [isLoading, setIsLoading] = useState(false);
+  const [hardwareStatus, setHardwareStatus] = useState<string>("");
   
   // Model management state
   const [modelsDir, setModelsDir] = useState(localStorage.getItem("modelsDir") || "");
@@ -101,6 +102,11 @@ function App() {
       });
       const data = await res.json();
       if (data.status === 'success') {
+        if (data.gpu_layers && data.gpu_layers > 0) {
+          setHardwareStatus(`GPU (${data.gpu_layers} camadas)`);
+        } else {
+          setHardwareStatus("CPU (Processador)");
+        }
         if (!isConnected) {
           connectWS();
         } else {
@@ -203,6 +209,11 @@ function App() {
               <div className={`indicator ${isConnected ? "connected" : ""}`}></div>
               <span>{isConnected ? "Conectado" : "Aguardando"}</span>
           </div>
+          {hardwareStatus && isConnected && (
+            <div className="status-badge" style={{marginLeft: '10px', background: 'rgba(255,255,255,0.1)'}}>
+              <span>💻 {hardwareStatus}</span>
+            </div>
+          )}
         </div>
         {isConnected && (
           <div className="header-right">

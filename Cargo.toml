@@ -11,7 +11,7 @@ edition = "2021"
 # Qualquer versão superior (como 0.1.137+) reativa o MMAP no Windows e
 # QUEBRA COMPLETAMENTE a injeção do vram_allocator.dll, causando o erro:
 # "failed to read magic". MANTENHA "=0.1.136" ESTRITAMENTE TRAVADO AQUI!
-llama-cpp-2 = { version = "=0.1.136", features = ["cuda"] }
+llama-cpp-2 = { version = "=0.1.136" }
 llama-cpp-sys-2 = "=0.1.136"
 wgpu = "0.19"
 raw-window-handle = "0.6"
@@ -37,3 +37,6 @@ dotenvy = "0.15"
 reqwest = { version = "0.11", features = ["json"] }
 
 
+[features]
+default = ["cuda"] 
+cuda = ["llama-cpp-2/cuda"]

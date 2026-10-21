@@ -31,6 +31,37 @@ fn list_models(path: &str) -> Result<Vec<String>, String> {
     Ok(models)
 }
 
+#[cfg(not(debug_assertions))]
+fn get_embedded_paths() -> (std::path::PathBuf, String) {
+    let temp_dir = std::env::temp_dir().join("ServidorPluralTemp");
+    let _ = std::fs::create_dir_all(&temp_dir);
+
+    let use_cuda = std::process::Command::new("nvidia-smi").output().is_ok();
+    let server_filename = if use_cuda { "servidor_cuda.exe" } else { "servidor_cpu.exe" };
+    
+    let server_path = temp_dir.join(server_filename);
+    
+    // Sempre reescrever o servidor para garantir a versão correta se ele trocar de GPU
+    let bytes: &[u8] = if use_cuda {
+        include_bytes!("../../../target/release/servidor_cuda.exe")
+    } else {
+        include_bytes!("../../../target/release/servidor_cpu.exe")
+    };
+    let _ = std::fs::write(&server_path, bytes);
+
+    let compressor_path = temp_dir.join("CompressorVRAM.exe");
+    if !compressor_path.exists() {
+        let _ = std::fs::write(&compressor_path, include_bytes!("../../../CompressorVRAM.exe"));
+    }
+    
+    let dll_path = temp_dir.join("vram_allocator.dll");
+    if !dll_path.exists() {
+        let _ = std::fs::write(&dll_path, include_bytes!("../../../vram_allocator.dll"));
+    }
+
+    (temp_dir, server_filename.to_string())
+}
+
 #[tauri::command]
 fn restart_server(state: tauri::State<'_, AppState>) -> Result<(), String> {
     let mut server_guard = state.server_process.lock().unwrap();
@@ -49,12 +80,26 @@ fn restart_server(state: tauri::State<'_, AppState>) -> Result<(), String> {
         }
         p
     };
+    #[cfg(debug_assertions)]
+    let server_path = base_path.join("target").join("release").join("servidor_plural_apps_sem_mic.exe");
     
     #[cfg(not(debug_assertions))]
-    let base_path = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
+    let (base_path, server_filename) = get_embedded_paths();
+    #[cfg(not(debug_assertions))]
+    let server_path = base_path.join(server_filename);
     
-    let server_path = base_path.join("target").join("release").join("servidor_plural_apps_sem_mic.exe");
-    if let Ok(new_child) = Command::new(&server_path).current_dir(&base_path).spawn() {
+    let log_path = std::path::PathBuf::from(format!("{}\\Desktop\\ServidorPlural_Log.txt", std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string())));
+    let mut cmd = Command::new(&server_path);
+    cmd.current_dir(&base_path);
+    
+    if let Ok(log_file) = std::fs::File::create(&log_path) {
+        if let Ok(log_err) = log_file.try_clone() {
+            cmd.stdout(std::process::Stdio::from(log_file));
+            cmd.stderr(std::process::Stdio::from(log_err));
+        }
+    }
+
+    if let Ok(new_child) = cmd.spawn() {
         *server_guard = Some(new_child);
         Ok(())
     } else {
@@ -84,12 +129,17 @@ pub fn run() {
                 }
                 p
             };
+            #[cfg(debug_assertions)]
+            let compressor_path = base_path.join("CompressorVRAM.exe");
+            #[cfg(debug_assertions)]
+            let server_path = base_path.join("target").join("release").join("servidor_plural_apps_sem_mic.exe");
             
             #[cfg(not(debug_assertions))]
-            let base_path = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
-
+            let (base_path, server_filename) = get_embedded_paths();
+            #[cfg(not(debug_assertions))]
             let compressor_path = base_path.join("CompressorVRAM.exe");
-            let server_path = base_path.join("target").join("release").join("servidor_plural_apps_sem_mic.exe");
+            #[cfg(not(debug_assertions))]
+            let server_path = base_path.join(server_filename);
 
             println!("Iniciando CompressorVRAM: {:?}", compressor_path);
             let compressor_process = Command::new(&compressor_path)
@@ -98,10 +148,18 @@ pub fn run() {
                 .ok();
 
             println!("Iniciando Servidor: {:?}", server_path);
-            let server_process = Command::new(&server_path)
-                .current_dir(&base_path)
-                .spawn()
-                .ok();
+            let log_path = std::path::PathBuf::from(format!("{}\\Desktop\\ServidorPlural_Log.txt", std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string())));
+            let mut cmd = Command::new(&server_path);
+            cmd.current_dir(&base_path);
+            
+            if let Ok(log_file) = std::fs::File::create(&log_path) {
+                if let Ok(log_err) = log_file.try_clone() {
+                    cmd.stdout(std::process::Stdio::from(log_file));
+                    cmd.stderr(std::process::Stdio::from(log_err));
+                }
+            }
+
+            let server_process = cmd.spawn().ok();
 
             app.manage(AppState {
                 server_process: Mutex::new(server_process),

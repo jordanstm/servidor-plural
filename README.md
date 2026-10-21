@@ -1,22 +1,111 @@
-﻿# Servidor Plural (Standalone LLM)
+# 🌐 Servidor Plural (Standalone Local LLM Server)
 
-Bem-vindo ao **Servidor Plural**, um servidor ultra-rápido para execução local de Inteligência Artificial usando modelos GGUF.
+**High-Performance Local LLM Inference Engine, OpenAI-Compatible API & Glassmorphism Web Playground for Windows x64.**
+
+[![Language: Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-blue.svg)](#)
+[![Acceleration: CUDA / UCRT](https://img.shields.io/badge/Acceleration-CUDA%20%7C%20UCRT-green.svg)](#)
+[![Memory Allocator](https://img.shields.io/badge/Memory%20Engine-CompressorVRAM-purple.svg)](https://github.com/jordanstm/CompressorVRAM)
+
+---
+
+## 🎯 Visão Geral
+
+O **Servidor Plural** é uma plataforma soberana e autônoma de inferência local desenvolvida em Rust. Ela permite executar modelos de linguagem no formato GGUF com aceleração de hardware (NVIDIA CUDA ou CPU), oferecendo:
+
+* **Servidor HTTP & WebSocket (Axum):** Execução ultra-rápida na porta `11438`.
+* **API Compatível com OpenAI:** Endpoints `/v1/chat/completions` e `/v1/models` para conexão imediata com ferramentas como LibreChat, OpenCode, TypingMind ou scripts Python.
+* **Dashboard Web Nativo (Glassmorphism):** Interface moderna embutida no binário com playground conversacional, controle de temperatura e monitor de hardware.
+* **Aplicativo Desktop (Tauri 2 + React 19):** Interface desktop para seleção visual de diretórios de modelos e controle de ciclo de vida do servidor.
+* **Coordenação Bare-Metal de Tensores:** Integração nativa com o **[CompressorVRAM](https://github.com/jordanstm/CompressorVRAM)**, utilizando a `vram_allocator.dll` para interceptar chamadas `_aligned_malloc` e prevenir estouros de heap durante a carga de matrizes densas.
+
+---
+
+## 🧪 Modelos Validados em Produção Local
+
+O motor foi testado e homologado em ambiente Windows x64 com aceleração de GPU NVIDIA para os seguintes modelos:
+
+| Modelo | Formato | Quantização | Carga de VRAM / RAM | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Qwen 2.5 Coder 7B Instruct** | GGUF | `Q8_0` (~8.1 GB) | CUDA + VRAM Hook | ✅ Homologado |
+| **Qwen 2.5 Coder 7B Instruct** | GGUF | `Q4_K_M` (~4.7 GB) | CUDA + VRAM Hook | ✅ Homologado |
+| **NVIDIA Nemotron 3 Nano 4B** | GGUF | `Q8_0` (~4.3 GB) | CUDA + VRAM Hook | ✅ Homologado |
+| **NVIDIA Nemotron 3 Nano 4B** | GGUF | `Q4_K_M` (~2.5 GB) | CUDA + VRAM Hook | ✅ Homologado |
+
+---
 
 ## 🚀 Como Iniciar
 
-1. Baixe o modelo LLM desejado no formato .gguf e coloque na pasta models/ (ou na mesma pasta do executável).
-2. Dê um duplo-clique no executável ServidorPluralAppsSemMic.exe.
-3. Siga o menu interativo no terminal:
-   - Insira o caminho do seu modelo GGUF (ex: models/meu_modelo.gguf).
-   - Escolha o modo de destilação/otimização:
-     * **1:** Padrão (Foco em Precisão)
-     * **2:** Alta Velocidade (Otimizado)
-     * **3:** Baixa VRAM (Economia máxima)
+### 1. Pré-requisitos
+* Coloque seus arquivos `.gguf` dentro da pasta `models/` (ou em qualquer pasta local de sua preferência).
+* Para aceleração de tensores e estabilização de heap, coloque a `vram_allocator.dll` (compilada a partir do [CompressorVRAM](https://github.com/jordanstm/CompressorVRAM)) na mesma pasta do executável.
 
-4. Acesse **http://localhost:11438** no seu navegador para abrir o Dashboard Web e interagir com o modelo.
+### 2. Executando o Servidor
+Dê um duplo-clique em `start.bat` ou execute via terminal:
+```bash
+cargo run --release
+```
 
-## 🎨 Dashboard Web (Glassmorphism)
-O executável já inclui uma interface moderna e responsiva nativamente. Pelo navegador, você pode visualizar as métricas de VRAM e conversar com a IA através do Playground integrado.
+Ou execute diretamente o binário compilado:
+```bash
+./servidor_plural_apps_sem_mic.exe
+```
+
+### 3. Acessando a Interface
+Abra seu navegador em:
+👉 **`http://localhost:11438`**
 
 ---
-*Powered by Rust & Axum*
+
+## 🔌 Conectando como API OpenAI
+
+Você pode apontar qualquer biblioteca compatível com a OpenAI diretamente para o Servidor Plural:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://127.0.0.1:11438/v1",
+    api_key="none"
+)
+
+response = client.chat.completions.create(
+    model="Qwen2.5-Coder-7B-Instruct-Q8_0",
+    messages=[
+        {"role": "user", "content": "Explique como funciona um allocator de VRAM em Rust."}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+---
+
+## 🛠️ Arquitetura do Repositório
+
+```
+ServidorPlural/
+├── src/
+│   ├── main.rs         # Servidor HTTP/WebSocket (Axum)
+│   ├── engine.rs       # Motor llama.cpp + Hook da vram_allocator.dll
+│   ├── oai.rs          # Estruturas de requisição/resposta OpenAI
+│   ├── oai_engine.rs   # Streaming de tokens e context cache
+│   ├── registry.rs     # Varredura dinâmica de modelos .gguf
+│   └── vram.rs         # Inicialização do pipeline de computação de VRAM
+├── interface/          # Cliente Desktop (Tauri 2 + React 19 + Vite)
+├── public/             # Assets e HTML do Dashboard Web integrado
+├── Cargo.toml          # Manifesto Rust
+└── start.bat           # Launcher automatizado
+```
+
+---
+
+## ⚡ Integração com o CompressorVRAM
+
+Quando inicializado com a flag CUDA, o Servidor Plural detecta a presença de `vram_allocator.dll` e ativa os detours de alocação de baixo nível antes de inicializar o contexto do modelo. Para saber mais sobre como o ring-buffer de 512 MB e o detour de `_aligned_malloc` operam, consulte o projeto irmão [CompressorVRAM](https://github.com/jordanstm/CompressorVRAM).
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja `LICENSE` para mais detalhes.
