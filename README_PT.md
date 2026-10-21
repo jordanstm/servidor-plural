@@ -109,3 +109,10 @@ Quando inicializado com a flag CUDA, o Servidor Plural detecta a presença de `v
 ## 📄 Licença
 
 Distribuído sob a licença MIT. Veja `LICENSE` para mais detalhes.
+
+---
+
+## 🎁 Política de Manutenção / Aviso aos Navegantes
+
+> **"Fiz minha parte e doei este presente para todos. Agora evoluir é com vocês: NÃO ENCHAM O SACO!"**  
+> *(Este projeto é fornecido no estado em que se encontra. Quer suporte para Linux, novos modelos ou mais recursos? Dê um fork e implemente!)*

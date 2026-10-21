@@ -112,3 +112,10 @@ When started with CUDA acceleration, Servidor Plural automatically searches for 
 ## 📄 License
 
 Distributed under the [MIT License](LICENSE).
+
+---
+
+## 🎁 Maintenance Policy / Community Notice
+
+> **"I did my part and gifted this project to the world. Further evolution, Linux ports, and enhancements are on you. DO NOT BUG ME FOR FREE SUPPORT — fork it and build!"**  
+> *(Fiz minha parte e doei este presente para todos. Agora evoluir é com vocês: **NÃO ENCHAM O SACO!**)*
